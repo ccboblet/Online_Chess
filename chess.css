@@ -1,0 +1,20 @@
+.squareSize {
+    width: 50px;
+    height: 50px;
+}
+.chessBoard {
+    display: grid;
+    grid-template-columns: 50px 50px 50px 50px 50px 50px 50px 50px;
+}
+.lightSquare {
+    background-color: bisque;
+}
+.darkSquare {
+    background-color: darkcyan;
+}
+
+.chessPiece {
+    width:90%;
+    height:90%;
+    margin:5% 5%;
+}
