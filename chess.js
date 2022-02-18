@@ -31,35 +31,6 @@ function resize(size) {
     }
 }
 
-function loadPieces() {
-    let pieces = ["arook", "bknight", "cbishop", "dqueen", "eking", "fpawn", "gwrook", "hwknight", "iwbishop", "jwqueen", "kwking", "lwpawn"];
-    let square = "";
-    let filename = "";
-    let blackPieces = pieces.slice(0, 5);
-    blackPieces = blackPieces.concat([pieces[2], pieces[1], pieces[0]]);
-    blackPieces = blackPieces.concat([pieces[5], pieces[5], pieces[5], pieces[5], pieces[5], pieces[5], pieces[5], pieces[5]]);
-    for (let i = 0; i < 2; i++) {
-        for (let j = 0; j < 8; j++) {
-            square = "_" + i + j;
-            filename = "img/" + blackPieces[i*8 + j] + ".png";
-            id = "_" + square
-            document.getElementById(square).innerHTML = '<img src=' + filename + ' class="chessPiece" id=' + id + ' draggable="true" ondragstart="startMove(event)">';
-        }
-    }
-
-    let whitePieces = pieces.slice(6, 11);
-    whitePieces = whitePieces.concat([pieces[8], pieces[7], pieces[6]]);
-    whitePieces = [pieces[11], pieces[11], pieces[11], pieces[11], pieces[11], pieces[11], pieces[11], pieces[11]].concat(whitePieces);
-    for (let i = 6; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-            square = "_" + i + j;
-            filename = "img/" + whitePieces[(i - 6) * 8 + j] + ".png";
-            id = "_" + square
-            document.getElementById(square).innerHTML = '<img src=' + filename + ' class="chessPiece" id=' + id + ' draggable="true" ondragstart="startMove(event)">';
-        }
-    }
-}
-
 function startMove(ev) {
     ev.dataTransfer.setData("text", ev.target.id);
 }
@@ -71,6 +42,9 @@ function endMove(ev) {
         ev.preventDefault();
         var data = ev.dataTransfer.getData("text");
         ev.target.appendChild(document.getElementById(data));
+        let move = board[data].type + " from" + " "  + board[data].square + " to" + " " + ev.target.id + "<br>";
+        document.getElementById("recentMove").innerHTML += move;
+        board[data].square = ev.target.id;
     }
 }
 
@@ -78,4 +52,62 @@ function allowMove(ev) {
     ev.preventDefault();
 }
 
+class Piece {
+    constructor(id, square, type) {
+        this.id = id;
+        this.square = square;
+        this.type = type;
+    }
+}
 
+let board = {
+}
+
+let defaultPiecePositions = {
+    _70 : "wrook",
+    _71 : "wknight",
+    _72 : "wbishop",
+    _73 : "wking",
+    _74 : "wqueen",
+    _75 : "wbishop",
+    _76 : "wknight",
+    _77 : "wrook",
+    _60 : "wpawn",
+    _61 : "wpawn",
+    _62 : "wpawn",
+    _63 : "wpawn",
+    _64 : "wpawn",
+    _65 : "wpawn",
+    _66 : "wpawn",
+    _67 : "wpawn",
+    _00 : "brook",
+    _01 : "bknight",
+    _02 : "bbishop",
+    _03 : "bking",
+    _04 : "bqueen",
+    _05 : "bbishop",
+    _06 : "bknight",
+    _07 : "brook",
+    _10 : "bpawn",
+    _11 : "bpawn",
+    _12 : "bpawn",
+    _13 : "bpawn",
+    _14 : "bpawn",
+    _15 : "bpawn",
+    _16 : "bpawn",
+    _17 : "bpawn",
+
+}
+
+function loadPieces(piecePositions = defaultPiecePositions) {
+    for (square in piecePositions) {
+        let newPiece = document.createElement("img");
+        newPiece.src = "img/" + piecePositions[square] + ".png";
+        newPiece.id = "_" + square;
+        newPiece.className = "chessPiece";
+        newPiece.draggable = true;
+        newPiece.addEventListener("dragstart", startMove);
+        document.getElementById(square).appendChild(newPiece);
+        board[newPiece.id] = new Piece(newPiece.id, square, piecePositions[square]);
+    }
+}

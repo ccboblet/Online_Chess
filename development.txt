@@ -1,0 +1,20 @@
+TRACK PIECE MOVEMENT
+Create an array of positions. Look up piece position everytime a move is made.
+Generate the array in load pieces function.
+Store in a piece object in a board object.
+
+Function: Load Pieces
+Link image with a square
+Edit child or innerhtml?
+Child is more modular (don't need 1 long string)
+Create unique id based on starting square (id doesn't need to mean anything to a human)
+
+Create object linking square with image
+loop through the object
+create an image element
+create a unique id based on the starting square
+append each image to the square
+create a piece object with id and current square (also need piece type)
+add piece object to board object
+
+I can track the square a piece moves to. How do i want to record piece type in relation to piece id
