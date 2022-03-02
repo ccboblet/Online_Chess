@@ -17,4 +17,5 @@ append each image to the square
 create a piece object with id and current square (also need piece type)
 add piece object to board object
 
-I can track the square a piece moves to. How do i want to record piece type in relation to piece id
+IMPORTANT QUESTIONS
+How do I want to store rules?
