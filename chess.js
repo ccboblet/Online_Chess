@@ -1,19 +1,89 @@
+// var chess = {
+//     makeBoard : function() {
+//         let newSquare;
+//         let colors = ["lightSquare", "darkSquare"]
+//         let toggle = true;
+//         for (let i = 7; i >= 0; i--) {
+//             toggle ^= true
+//             for (let j = 0; j < 8; j++) {
+//                 toggle ^= true;
+//                 newSquare = document.createElement("div")
+//                 newSquare.className = colors[toggle] + " squareSize";
+//                 newSquare.id = "" + i + j + "_";
+//                 newSquare.addEventListener("drop", endMove);
+//                 newSquare.addEventListener("dragover", allowMove);
+//                 newSquare.addEventListener("drag", allowMove);
+//                 document.getElementById("chessBoard").appendChild(newSquare);
+//             }
+//         }
+//     },
+
+//     // Input in pixels ex. "100px"
+//     resize : function(size) {
+//         let squares = document.getElementsByClassName("squareSize");
+//         let board = document.getElementsByClassName("chessBoard");
+//         for (let i = 0; i < squares.length; i++) {
+//             squares[i].style.height = size;
+//             squares[i].style.width = size
+//         }
+//         for (let i = 0; i < board.length; i++) {
+//             board[i].style.gridTemplateColumns = size + " " + size + " " + size + " " + size + " " + size + " " + size + " " + size + " " + size;
+//         }
+//     },
+
+//     startMove : function(ev) {
+//         ev.dataTransfer.setData("text", ev.target.id);
+//     },
+
+//     allowMove : function(ev) {
+//         ev.preventDefault();
+//     },
+
+//     endMove : function(ev) {
+//         let start = '', stop = '', pieceId = '';
+//         let data = ev.dataTransfer.getData("text");
+//         ev.preventDefault();
+//         if(ev.target.id in board) {
+//             if(board[ev.target.id].type[0] == board[data].type[0]) {
+//                 return false
+//             } else {
+//                 stop = ev.target.parentNode.id;
+//             }
+//         } else {
+//             stop = ev.target.id
+//         }
+//         start = board[data].square;
+//         pieceId = typeToId[board[data].type];
+//         // Convert start stop pieceId to ints
+//         start = parseInt(start);
+//         stop = parseInt(stop);
+//         let move = new Move(start, stop, pieceId);
+//         if (rules.makeMove()) {
+//             return false;
+//         } else {
+//             ev.target.appendChild(document.getElementById(data));
+//             let move = board[data].type + " from " + board[data].square + " to " + ev.target.id + "<br>";
+//             document.getElementById("recentMove").innerHTML += move;
+//             board[data].square = ev.target.id;
+//         }
+//     }
+// }
+
 function makeBoard() {
     let newSquare;
     let colors = ["lightSquare", "darkSquare"]
     let toggle = true;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 7; i >= 0; i--) {
         toggle ^= true
         for (let j = 0; j < 8; j++) {
             toggle ^= true;
             newSquare = document.createElement("div")
             newSquare.className = colors[toggle] + " squareSize";
-            newSquare.id = "_" + i + j;
+            newSquare.id = "" + i + j + "_";
             newSquare.addEventListener("drop", endMove);
             newSquare.addEventListener("dragover", allowMove);
             newSquare.addEventListener("drag", allowMove);
             document.getElementById("chessBoard").appendChild(newSquare);
-
         }
     }
 }
@@ -36,28 +106,34 @@ function startMove(ev) {
 }
 
 function endMove(ev) {
-    let start, stop, pieceId;
+    // Format variables to determine if move is legal
+    let start = '', stop = '', pieceId = '';
     let data = ev.dataTransfer.getData("text");
     ev.preventDefault();
     if(ev.target.id in board) {
         if(board[ev.target.id].type[0] == board[data].type[0]) {
             return false
+        } else {
+            stop = ev.target.parentNode.id;
         }
-    }
-    else {
-        stop = ev.target.parentNode.id;
+    } else {
+        stop = ev.target.id
     }
     start = board[data].square;
-    stop = ev.target.id;
-    pieceId = board[data].type;
-    //let move = new Move(start, stop, pieceId);
-    if (rules.makeMove()) {
-        return false;
-    } else {
+    start = parseInt(start);
+    stop = parseInt(stop);
+    pieceId = typeToId[board[data].type];
+
+    // Convert start stop pieceId to ints
+    let move = new Move(start, stop, pieceId);
+
+    if (rules.makeMove(position, move)) {
         ev.target.appendChild(document.getElementById(data));
         let move = board[data].type + " from " + board[data].square + " to " + ev.target.id + "<br>";
         document.getElementById("recentMove").innerHTML += move;
         board[data].square = ev.target.id;
+    } else {
+        return false;
     }
 }
 
@@ -77,51 +153,69 @@ let board = {
 }
 
 let defaultPiecePositions = {
-    _70 : "wrook",
-    _71 : "wknight",
-    _72 : "wbishop",
-    _73 : "wking",
-    _74 : "wqueen",
-    _75 : "wbishop",
-    _76 : "wknight",
-    _77 : "wrook",
-    _60 : "wpawn",
-    _61 : "wpawn",
-    _62 : "wpawn",
-    _63 : "wpawn",
-    _64 : "wpawn",
-    _65 : "wpawn",
-    _66 : "wpawn",
-    _67 : "wpawn",
-    _00 : "brook",
-    _01 : "bknight",
-    _02 : "bbishop",
-    _03 : "bking",
-    _04 : "bqueen",
-    _05 : "bbishop",
-    _06 : "bknight",
-    _07 : "brook",
-    _10 : "bpawn",
-    _11 : "bpawn",
-    _12 : "bpawn",
-    _13 : "bpawn",
-    _14 : "bpawn",
-    _15 : "bpawn",
-    _16 : "bpawn",
-    _17 : "bpawn",
+    "00_" : "wrook",
+    "01_" : "wknight",
+    "02_" : "wbishop",
+    "03_" : "wking",
+    "04_" : "wqueen",
+    "05_" : "wbishop",
+    "06_" : "wknight",
+    "07_" : "wrook",
+    "10_" : "wpawn",
+    "11_" : "wpawn",
+    "12_" : "wpawn",
+    "13_" : "wpawn",
+    "14_" : "wpawn",
+    "15_" : "wpawn",
+    "16_" : "wpawn",
+    "17_" : "wpawn",
+    "70_" : "brook",
+    "71_" : "bknight",
+    "72_" : "bbishop",
+    "73_" : "bking",
+    "74_" : "bqueen",
+    "75_" : "bbishop",
+    "76_" : "bknight",
+    "77_" : "brook",
+    "60_" : "bpawn",
+    "61_" : "bpawn",
+    "62_" : "bpawn",
+    "63_" : "bpawn",
+    "64_" : "bpawn",
+    "65_" : "bpawn",
+    "66_" : "bpawn",
+    "67_" : "bpawn",
 
 }
 
+let typeToId = {
+    'wrook' : 1,
+    'wknight' : 2,
+    'wbishop' : 3,
+    'wqueen' : 4,
+    'wking' : 5,
+    'wpawn' : 6,
+    'brook' : 9,
+    'bknight' : 10,
+    'bbishop' : 11,
+    'bqueen' : 12,
+    'bking' : 13,
+    'bpawn' : 14
+}
+
 function loadPieces(piecePositions = defaultPiecePositions) {
+    let test = position.board;
     for (square in piecePositions) {
         let newPiece = document.createElement("img");
         newPiece.src = "img/" + piecePositions[square] + ".png";
-        newPiece.id = "_" + square;
+        newPiece.id = square + "_";
         newPiece.className = "chessPiece";
         newPiece.draggable = true;
         newPiece.addEventListener("dragstart", startMove);
         document.getElementById(square).appendChild(newPiece);
         board[newPiece.id] = new Piece(newPiece.id, square, piecePositions[square]);
+        arraySquare = parseInt(square[0]) * 16 + parseInt(square[1]);
+        position.board[arraySquare] = typeToId[piecePositions[square]];
     }
 }
 
@@ -130,17 +224,17 @@ class Board_0x88 {
         // Each entry represents a square
         // The values on the left board represent pieces
         // White pice&15>8 bit black piece&15<8
-        // 0 = rook, 1 = knight, 2 = bishop, 3 = queen, 4 = king, 5 = pawn
+        // 1 = rook, 2 = knight, 3 = bishop, 4 = queen, 5 = king, 6 = pawn
         // The values on the right board have yet to be determined
         this.board = [
-            1,   2,   3,   4,   5,   3,   2,   1,      0,0,0,0,0,0,0,0,
-            6,   6,   6,   6,   6,   6,   6,   6,      0,0,0,0,0,0,0,0,
             0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
             0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
             0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
             0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            14,  14,  14,  14,  14,  14,  14,  14,     0,0,0,0,0,0,0,0,
-            9,   10,  11,  12,  13,  11,  10,  9,      0,0,0,0,0,0,0,0,
+            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
+            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
+            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
+            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
         ];
         // 2 sets of 2 for each castle 
         // 1 => able to castle, 0 => unable to castle 
@@ -195,7 +289,6 @@ let rules = {
     // Path collision
     // Check
     makeMove: function(board=1, move=1) {
-
-        return false;
+        return true;
     }
 }
