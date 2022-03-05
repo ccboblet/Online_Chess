@@ -1,21 +1,7 @@
-TRACK PIECE MOVEMENT
-Create an array of positions. Look up piece position everytime a move is made.
-Generate the array in load pieces function.
-Store in a piece object in a board object.
+Add input and output comments to each function
 
-Function: Load Pieces
-Link image with a square
-Edit child or innerhtml?
-Child is more modular (don't need 1 long string)
-Create unique id based on starting square (id doesn't need to mean anything to a human)
+Make board data structure consistent between functions
 
-Create object linking square with image
-loop through the object
-create an image element
-create a unique id based on the starting square
-append each image to the square
-create a piece object with id and current square (also need piece type)
-add piece object to board object
+Add functions to calculate all possible moves for a piece
 
-IMPORTANT QUESTIONS
-How do I want to store rules?
+How to get square id's? Do I store them in a variable too?
