@@ -2,6 +2,48 @@
 Requirements - <div> with id "chessBoard"
 Optional - <p> with id recentMove */
 
+/* Data strucures */
+class twoWayMap {
+    constructor() {
+        this.map = {};
+        this.revmap = {};
+    }
+
+    addData([id, data]) {
+        this.map[id] = data;
+        this.revmap[data] = id;
+    }
+
+    getId(data) {
+        return this.revmap[data];
+    }
+
+    getData(id) {
+        return this.map[id];
+    }
+}
+
+/* Constants */
+const numToType = {
+    1 : "wrook",
+    2 : "wknight",
+    3 : "wbishop",
+    4 : "wqueen",
+    5 : "wking",
+    6 : "wpawn",
+    9 : "brook",
+    10 : "bknight",
+    11 : "bbishop",
+    12 : "bqueen",
+    13 : "bking",
+    14 : "bpawn"
+};
+
+/* Variables */
+let squares = new twoWayMap();
+
+let pieces = {}
+
 /* These functions are used to graphically make the board and pieces */
 /* This function creates the squares of the board
 Default square size is 50px
@@ -18,6 +60,7 @@ function makeBoard(letter = "_", size = "50px") {
             newSquare = document.createElement("div")
             newSquare.className = colors[toggle] + " squareSize";
             newSquare.id = "" + i + j + "_";
+            squares.addData([newSquare.id, i * 16 + j]);
             newSquare.addEventListener("drop", endMove);
             newSquare.addEventListener("dragover", allowMove);
             document.getElementById("chessBoard").appendChild(newSquare);
@@ -29,38 +72,19 @@ function makeBoard(letter = "_", size = "50px") {
 /* This function loads the piece images and initializes the Board_0x88 data structure
 The element ids are also stored in a board object for fast lookup
 Input - Board_0x88 */
-function loadPieces(position = new Board_0x88()) {
-    for (square in position.board) {
-        if(square > 0) {
+function loadPieces(position) {
+    for(let i = 0; i < position.board.length; i++) {
+        if(position.board[i] > 0) {
             let newPiece = document.createElement("img");
-            newPiece.src = "img/" + idToType[square] + ".png";
-            newPiece.id = square + "_";
+            newPiece.src = "img/" + numToType[position.board[i]] + ".png";
+            newPiece.id = i + squares.getId(i);
+            pieces[newPiece.id] = position.board[i];
             newPiece.className = "chessPiece";
             newPiece.draggable = true;
             newPiece.addEventListener("dragstart", startMove);
-            document.getElementById(square).appendChild(newPiece);
-
+            document.getElementById(squares.getId(i)).appendChild(newPiece);
         }
-        let newPiece = document.createElement("img");
-        
-        board[newPiece.id] = new Piece(newPiece.id, square, piecePositions[square]);
-        arraySquare = parseInt(square[0]) * 16 + parseInt(square[1]);
     }
-}
-let idToType = {
-    1 : "wrook",
-    2 : "wknight",
-    3 : "wbishop",
-    4 : "wking",
-    5 : "wqueen",
-    6 : "wpawn",
-    9 : "brook",
-    10 : "bknight",
-    11 : "bbishop",
-    12 : "bking",
-    13 : "bqueen",
-    14 : "bpawn"
-
 }
 
 /* This function resizes the board and pieces
@@ -87,66 +111,32 @@ function startMove(ev) {
 /* This event is triggered on drop from a square
 This function creates a Move object and passes it to makeMove */
 function endMove(ev) {
-    // Format variables to determine if move is legal
-    let start = "", stop = "", pieceId = "";
-    let data = ev.dataTransfer.getData("text");
     ev.preventDefault();
-    if(ev.target.id in board) {
-        if(board[ev.target.id].type[0] == board[data].type[0]) {
-            return false
-        } else {
-            stop = ev.target.parentNode.id;
+    // Format variables to determine if move is legal
+    let start = "", stop = "";
+    let data = ev.dataTransfer.getData("text");
+    
+    startSquare = document.getElementById(data).parentElement;
+    start = squares.getData(startSquare.id);
+    stopSquare = ev.target;
+    if(stopSquare.id in pieces) {stopSquare = document.getElementById(stopSquare.id).parentElement;}
+    stop = squares.getData(stopSquare.id);
+
+    pieceId = pieces[data];
+    
+    let move = new Move(start, stop, pieceId)
+    valid = rules.makeMove(boardState, move)
+    if(valid) {
+        if(stopSquare.childNodes.length>0){
+            stopSquare.removeChild(stopSquare.childNodes[0])
         }
-    } else {
-        stop = ev.target.id
-    }
-    start = board[data].square;
-    start = parseInt(start);
-    stop = parseInt(stop);
-    pieceId = typeToId[board[data].type];
-
-    // Convert start stop pieceId to ints
-    let move = new Move(start, stop, pieceId);
-
-    if (rules.makeMove(position, move)) {
-        ev.target.appendChild(document.getElementById(data));
-        let move = board[data].type + " from " + board[data].square + " to " + ev.target.id + "<br>";
-        document.getElementById("recentMove").innerHTML += move;
-        board[data].square = ev.target.id;
-    } else {
-        return false;
+        stopSquare.appendChild(document.getElementById(data));
     }
 }
 
 /* This event is triggered on  */
 function allowMove(ev) {
     ev.preventDefault();
-}
-
-class Piece {
-    constructor(id, square, type) {
-        this.id = id;
-        this.square = square;
-        this.type = type;
-    }
-}
-
-let board = {
-}
-
-let typeToId = {
-    "wrook" : 1,
-    "wknight" : 2,
-    "wbishop" : 3,
-    "wqueen" : 4,
-    "wking" : 5,
-    "wpawn" : 6,
-    "brook" : 9,
-    "bknight" : 10,
-    "bbishop" : 11,
-    "bqueen" : 12,
-    "bking" : 13,
-    "bpawn" : 14
 }
 
 /* Data structure that contains all the information to repiplicate a chess position */
@@ -229,14 +219,14 @@ let rules = {
     //         6 : pawnRules
     //     },
 
-        castleMap: {
-            0x00 : 0b0111,
-            0x07 : 0b1011,
-            0x04 : 0b0011,
-            0x70 : 0b1101,
-            0x77 : 0b1110,
-            0x74 : 0b1100
-        },
+    castleMap: {
+        0x00 : 0b0111,
+        0x07 : 0b1011,
+        0x04 : 0b0011,
+        0x70 : 0b1101,
+        0x77 : 0b1110,
+        0x74 : 0b1100
+    },
 
     // Checks for illegal capture
     // If it is a legal move - 
@@ -249,7 +239,77 @@ let rules = {
     // Capture
     // Path collision
     // Check
-    makeMove: function(board=1, move=1) {
-        return true;
+    makeMove: function(board, move) {
+        let test1, test2, test3;
+        let pawnMoves = [15, 16, 17, 32];
+        if([6,14].includes(move.pieceId)) {
+            direction = ((move.pieceId>>3)*-2)+1;
+            distance = (move.stop - move.start)*direction;
+            // Must be in 15 16 17 32 and greater than 1
+            if(distance>1 && pawnMoves.includes(distance)) {
+                // Path must be clear for 16 and 32, enemy piece for 15 and 17
+                if([15,17].includes(distance)) {
+                    if((board.board[move.stop] > 0) && ((board.board[move.stop] & 0x8) != (move.pieceId & 0x8))) {} else {return false;}
+                } else if(distance==(16) && board.board[move.stop]==0) {} 
+                else if(distance==(32) && board.board[move.start+(16*direction)]==0 && board.board[move.stop]==0 && (move.start<24 || move.start>95)) {}
+                else {
+                    return false
+                }
+            }
+            this.updateBoard(board, move);
+            return true;
+        }
+        return false;
+    },
+
+    updateBoard: function(board, move) {
+        board.board[move.start] = 0;
+        board.board[move.stop] = pieceId;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Constants */
+let idToType = {
+    1 : "wrook",
+    2 : "wknight",
+    3 : "wbishop",
+    4 : "wking",
+    5 : "wqueen",
+    6 : "wpawn",
+    9 : "brook",
+    10 : "bknight",
+    11 : "bbishop",
+    12 : "bking",
+    13 : "bqueen",
+    14 : "bpawn"
+
 }
