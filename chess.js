@@ -113,7 +113,7 @@ This function creates a Move object and passes it to makeMove */
 function endMove(ev) {
     ev.preventDefault();
     // Format variables to determine if move is legal
-    let start = "", stop = "";
+    let start, stop;
     let data = ev.dataTransfer.getData("text");
     
     startSquare = document.getElementById(data).parentElement;
@@ -121,16 +121,19 @@ function endMove(ev) {
     stopSquare = ev.target;
     if(stopSquare.id in pieces) {stopSquare = document.getElementById(stopSquare.id).parentElement;}
     stop = squares.getData(stopSquare.id);
-
     pieceId = pieces[data];
-    
-    let move = new Move(start, stop, pieceId)
-    valid = rules.makeMove(boardState, move)
-    if(valid) {
-        if(stopSquare.childNodes.length>0){
-            stopSquare.removeChild(stopSquare.childNodes[0])
+    let move = new Move(start, stop, pieceId);
+
+    if(move.start != move.stop) {
+        let moveId = "" + start + stop;
+        moves = rules.generateMove(boardState, move);
+        if(moves.hasOwnProperty(moveId)) {
+            rules.updateBoard(boardState, moves[moveId]);
+            if(stopSquare.childNodes.length>0){
+                stopSquare.removeChild(stopSquare.childNodes[0])
+            }
+            stopSquare.appendChild(document.getElementById(data));
         }
-        stopSquare.appendChild(document.getElementById(data));
     }
 }
 
@@ -240,31 +243,115 @@ let rules = {
     // Path collision
     // Check
     makeMove: function(board, move) {
-        let test1, test2, test3;
-        let pawnMoves = [15, 16, 17, 32];
-        if([6,14].includes(move.pieceId)) {
-            direction = ((move.pieceId>>3)*-2)+1;
-            distance = (move.stop - move.start)*direction;
-            // Must be in 15 16 17 32 and greater than 1
-            if(distance>1 && pawnMoves.includes(distance)) {
-                // Path must be clear for 16 and 32, enemy piece for 15 and 17
-                if([15,17].includes(distance)) {
-                    if((board.board[move.stop] > 0) && ((board.board[move.stop] & 0x8) != (move.pieceId & 0x8))) {} else {return false;}
-                } else if(distance==(16) && board.board[move.stop]==0) {} 
-                else if(distance==(32) && board.board[move.start+(16*direction)]==0 && board.board[move.stop]==0 && (move.start<24 || move.start>95)) {}
-                else {
-                    return false
-                }
-            }
-            this.updateBoard(board, move);
-            return true;
-        }
-        return false;
     },
 
     updateBoard: function(board, move) {
         board.board[move.start] = 0;
         board.board[move.stop] = pieceId;
+    },
+
+    generateMove: function(board, move) {
+        let moves = {};
+        let direction, destination, moveStop, capture;
+        switch(move.pieceId) {
+            case 6:
+            case 14:
+                let row;
+                direction = ((move.pieceId>>3)*-2)+1;
+                moveStop = move.start + (16 * direction);
+                destination = board.board[moveStop];
+                if(destination == 0) {
+                    moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+
+                    row = move.start < 24 || move.start > 95;
+                    moveStop = move.start + (32 * direction)
+                    destination = board.board[moveStop]
+                    if((destination == 0) && row) {
+                        moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                    }
+                }
+                moveStop = move.start + (15 * direction);
+                destination = board.board[moveStop];
+                capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                if(capture) {
+                    moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                }
+                moveStop = move.start + (17 * direction);
+                destination = board.board[moveStop];
+                capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                if(capture) {
+                    moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                }
+                return moves;
+            case 1:
+            case 9:
+                direction = [1, -1, 16, -16];
+                for(i in direction) {
+                    moveStop = move.start + direction[i];
+                    while(!(moveStop&0x88)) {
+                        destination = board.board[moveStop];
+                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        if(destination == 0 || capture) {
+                            moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                        } else {break;}
+                        moveStop += direction[i];
+                    }
+                }
+                return moves;
+            case 2:
+            case 10:
+                direction = [31, 33, 14, 18, -31, -33, -14, -18];
+                for(i in direction) {
+                    moveStop = move.start + direction[i];
+                    destination = board.board[moveStop];
+                    capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                    if((destination == 0 || capture) && !(moveStop&0x88)) {
+                        moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                    }
+                }
+                return moves;
+            case 3:
+            case 11:
+                direction = [15, 17, -15, -17];
+                for(i in direction) {
+                    moveStop = move.start + direction[i];
+                    while(!(moveStop&0x88)) {
+                        destination = board.board[moveStop];
+                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        if(destination == 0 || capture) {
+                            moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                        } else {break;}
+                        moveStop += direction[i];
+                    }
+                }
+                return moves;
+            case 4:
+            case 12:
+                direction = [1, -1, 16, -16, 15, 17, -15, -17];
+                for(i in direction) {
+                    moveStop = move.start + direction[i];
+                    while(!(moveStop&0x88)) {
+                        destination = board.board[moveStop];
+                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        if(destination == 0 || capture) {
+                            moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                        } else {break;}
+                        moveStop += direction[i];
+                    }
+                }
+            case 5:
+            case 13:
+                direction = [1, -1, 16, -16, 15, 17, -15, -17];
+                for(i in direction) {
+                    moveStop = move.start + direction[i];
+                    destination = board.board[moveStop];
+                    capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                    if((destination == 0 || capture) && !(moveStop&0x88)) {
+                        moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
+                    }
+                }
+                return moves;
+        }
     }
 }
 
