@@ -124,15 +124,22 @@ function endMove(ev) {
     pieceId = pieces[data];
     let move = new Move(start, stop, pieceId);
 
+
+    let checkCopyBoardState = JSON.parse(JSON.stringify(boardState))
+    let color = pieceId & 0x8;
     if(move.start != move.stop) {
         let moveId = "" + start + stop;
-        moves = rules.generateMove(boardState, move);
+        moves = rules.generateMove(checkCopyBoardState, move);
         if(moves.hasOwnProperty(moveId)) {
-            rules.updateBoard(boardState, moves[moveId]);
-            if(stopSquare.childNodes.length>0){
-                stopSquare.removeChild(stopSquare.childNodes[0])
-            }
-            stopSquare.appendChild(document.getElementById(data));
+            rules.updateBoard(checkCopyBoardState, moves[moveId]);
+            findChecksMove = new Move(checkCopyBoardState.kings[color>>3], 0, pieceId);
+            if(!rules.findChecks(checkCopyBoardState, findChecksMove)){
+                boardState = checkCopyBoardState;
+                if(stopSquare.childNodes.length>0){
+                    stopSquare.removeChild(stopSquare.childNodes[0])
+                }
+                stopSquare.appendChild(document.getElementById(data));
+                }
         }
     }
 }
@@ -170,32 +177,8 @@ class Board_0x88 {
         this.turn = 0b1
         // Set a flag for promotion
         this.promotion = 255
-    }
-
-    defaultBoard() {
-        this.board = [
-            1,   2,   3,   4,   5,   3,   2,   1,      0,0,0,0,0,0,0,0,
-            6,   6,   6,   6,   6,   6,   6,   6,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            14, 14,  14,  14,  14,  14,  14,  14,      0,0,0,0,0,0,0,0,
-            9,  10,  11,  12,  13,  11,  10,   9,      0,0,0,0,0,0,0,0,
-        ];
-    }
-
-    clearBoard() {
-        this.board = [
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-            0,   0,   0,   0,   0,   0,   0,   0,      0,0,0,0,0,0,0,0,
-        ];
+        // Set king position to help find checks
+        this.kings = [4, 116];
     }
 }
 
@@ -242,12 +225,32 @@ let rules = {
     // Capture
     // Path collision
     // Check
-    makeMove: function(board, move) {
+    findChecks: function(board, move) {
+        let moves = {};
+        moveTypes = [1, 2, 3, 4, 5, 6];
+        let fakeMove, color, moveStop, destination;
+        color = move.pieceId & 0x8;
+        for(let i = 0; i < moveTypes.length; i++) {
+            fakeMove = new Move(move.start, 0, moveTypes[i]+color);
+            moves = this.generateMove(board, fakeMove);
+            for(j in moves) {
+                moveStop = moves[j].stop;
+                destination = board.board[moveStop];
+                if((destination & 0x7) == moveTypes[i]) {
+                    return true;
+                } 
+            }
+        }
+        return false;
     },
 
     updateBoard: function(board, move) {
         board.board[move.start] = 0;
         board.board[move.stop] = pieceId;
+        if((move.pieceId & 0x7) == 5) {
+            let color = (move.pieceId & 0x8)>>3;
+            board.kings[color] = move.stop;
+        }
     },
 
     generateMove: function(board, move) {
@@ -290,10 +293,11 @@ let rules = {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
-                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        capture = (destination != 0) && ((move.pieceId&0x8) != (destination&0x8));
                         if(destination == 0 || capture) {
                             moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
                         } else {break;}
+                        if(capture) {break;}
                         moveStop += direction[i];
                     }
                 }
@@ -317,10 +321,11 @@ let rules = {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
-                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        capture = (destination != 0) && ((move.pieceId&0x8) != (destination&0x8));
                         if(destination == 0 || capture) {
                             moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
                         } else {break;}
+                        if(capture) {break;}
                         moveStop += direction[i];
                     }
                 }
@@ -332,10 +337,11 @@ let rules = {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
-                        capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
+                        capture = (destination != 0) && ((move.pieceId&0x8) != (destination&0x8));
                         if(destination == 0 || capture) {
                             moves["" + move.start + moveStop] = new Move(move.start, moveStop, move.pieceId);
                         } else {break;}
+                        if(capture) {break;}
                         moveStop += direction[i];
                     }
                 }
