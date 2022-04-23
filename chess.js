@@ -122,25 +122,33 @@ function endMove(ev) {
     if(stopSquare.id in pieces) {stopSquare = document.getElementById(stopSquare.id).parentElement;}
     stop = squares.getData(stopSquare.id);
     pieceId = pieces[data];
+
+    if(pieceId >> 3 != boardState.turn) {
+        return
+    }
+
     let move = new Move(start, stop, pieceId);
 
-
-    let checkCopyBoardState = JSON.parse(JSON.stringify(boardState))
-    let color = pieceId & 0x8;
-    if(move.start != move.stop) {
-        let moveId = "" + start + stop;
-        moves = rules.generateMove(checkCopyBoardState, move);
-        if(moves.hasOwnProperty(moveId)) {
-            rules.updateBoard(checkCopyBoardState, moves[moveId]);
-            findChecksMove = new Move(checkCopyBoardState.kings[color>>3], 0, pieceId);
-            if(!rules.findChecks(checkCopyBoardState, findChecksMove)){
-                boardState = checkCopyBoardState;
-                if(stopSquare.childNodes.length>0){
-                    stopSquare.removeChild(stopSquare.childNodes[0])
-                }
-                stopSquare.appendChild(document.getElementById(data));
-                }
+    let valid;
+    [valid, boardState] = rules.humanMove(boardState, move);
+    if(valid) {
+        if(stopSquare.childNodes.length>0){
+            stopSquare.removeChild(stopSquare.childNodes[0])
         }
+        stopSquare.appendChild(document.getElementById(data));
+    
+        let computer = rules.computerMove(boardState)
+        move = computer[Math.floor(Math.random() * computer.length)]
+        rules.updateBoard(boardState, move)
+        boardState.turn ^= 1
+        startSquare = document.getElementById(squares.getId(move.start))
+        pieceId = startSquare.childNodes[0].id
+        stopSquare = document.getElementById(squares.getId(move.stop))
+        if(stopSquare.childNodes.length>0){
+            stopSquare.removeChild(stopSquare.childNodes[0])
+        }
+        stopSquare.appendChild(document.getElementById(pieceId));
+    
     }
 }
 
@@ -174,7 +182,7 @@ class Board_0x88 {
         // When a pawn double moves set the en passant square
         this.enpassant = 255
         // Move 1 = white, 0 = black
-        this.turn = 0b1
+        this.turn = 0b0
         // Set a flag for promotion
         this.promotion = 255
         // Set king position to help find checks
@@ -225,15 +233,15 @@ let rules = {
     // Capture
     // Path collision
     // Check
-    findChecks: function(board, move) {
+    findChecks: function(board) {
         let moves = {};
+        let move = new Move(board.kings[board.turn], null, board.turn << 3)
         moveTypes = [1, 2, 3, 4, 5, 6];
-        let fakeMove, color, moveStop, destination;
-        color = move.pieceId & 0x8;
+        let fakeMove, moveStop, destination;
         for(let i = 0; i < moveTypes.length; i++) {
-            fakeMove = new Move(move.start, 0, moveTypes[i]+color);
+            fakeMove = new Move(move.start, null, moveTypes[i] + move.pieceId);
             moves = this.generateMove(board, fakeMove);
-            for(j in moves) {
+            for(let j in moves) {
                 moveStop = moves[j].stop;
                 destination = board.board[moveStop];
                 if((destination & 0x7) == moveTypes[i]) {
@@ -246,7 +254,7 @@ let rules = {
 
     updateBoard: function(board, move) {
         board.board[move.start] = 0;
-        board.board[move.stop] = pieceId;
+        board.board[move.stop] = move.pieceId;
         if((move.pieceId & 0x7) == 5) {
             let color = (move.pieceId & 0x8)>>3;
             board.kings[color] = move.stop;
@@ -358,51 +366,44 @@ let rules = {
                 }
                 return moves;
         }
+    },
+
+    humanMove: function(board, move) {
+        let checkCopyBoardState = JSON.parse(JSON.stringify(board))
+        let moveId = "" + move.start + move.stop;
+        moves = rules.generateMove(checkCopyBoardState, move);
+        if(moves.hasOwnProperty(moveId)) {
+            rules.updateBoard(checkCopyBoardState, moves[moveId]);
+            if(!rules.findChecks(checkCopyBoardState)){
+                checkCopyBoardState.turn ^= 1
+                return [true, checkCopyBoardState];
+            }
+        }
+        return [false, boardState]
+        // Generate all moves
+        // If move in all moves
+        // Check for checks
+        // Return updated board
+    },
+
+    computerMove: function(board) {
+        let allMoves = [];
+        let fakeBoard, testMoves;
+        for(let i = 0; i < 128; i++) {
+            if(board.board[i] > 0 && (board.board[i] >> 3 == board.turn)) {
+                move = new Move(i, null, board.board[i])
+                testMoves = this.generateMove(board, move)
+                for(j in testMoves) {
+                    fakeBoard = JSON.parse(JSON.stringify(board));
+                    this.updateBoard(fakeBoard, testMoves[j])
+                    if(this.findChecks(fakeBoard)) {
+                        delete testMoves.j;
+                    } else {
+                        allMoves.push(testMoves[j])
+                    }
+                }
+            }
+        }
+        return allMoves;
     }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Constants */
-let idToType = {
-    1 : "wrook",
-    2 : "wknight",
-    3 : "wbishop",
-    4 : "wking",
-    5 : "wqueen",
-    6 : "wpawn",
-    9 : "brook",
-    10 : "bknight",
-    11 : "bbishop",
-    12 : "bking",
-    13 : "bqueen",
-    14 : "bpawn"
-
 }
