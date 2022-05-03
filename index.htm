@@ -3,6 +3,7 @@
     <head>
         <link rel="stylesheet" href="chess.css">
         <script type="text/javascript" src="chess.js"></script>
+        <script type="text/javascript" src="engine.js"></script>
         <title>
             Chess
         </title>
@@ -11,7 +12,7 @@
     <body id="testBody">
         <div id="chessBoard" class="chessBoard" ondr>
             <script>
-                makeBoard();
+                makeBoard("chessBoard");
                 resize("70px");
                 let boardState = new Board_0x88();
                 loadPieces(boardState);
