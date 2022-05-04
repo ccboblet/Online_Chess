@@ -10,42 +10,69 @@ let engine = {
 
     evaluate: function(board) {
         let points = 0;
-        let color = board.turn << 3;
+        let color;
         for(let i = 0; i < board.board.length; i++) {
-            if(board.board[i] > 0 && board.board[i] & 0x8) {
+            color = board.board[i] & 0x8
+            if(board.board[i] > 0 && color) {
                 points -= this.pieceVal[board.board[i] & 0x7];
-            } else if(board.board[i] > 0 && !(board.board[i] & 0x0)) {
+            } else if(board.board[i] > 0 && !color) {
                 points += this.pieceVal[board.board[i] & 0x7];
             }
         }
         return points;
     },
 
-    oneMoveAhead: function(board) {
-        let nowMove = rules.computerMove(board)
-        let nextMove;
-        let points = -200, nextPoints = 200;
-        let bestMove;
-        let pointMulti = (-2 * board.turn) + 1
-        for(m in nowMove) {
-            nextPoints = 200;
-            boardCopy = JSON.parse(JSON.stringify(board));
-            rules.updateBoard(boardCopy, nowMove[m]);
-            boardCopy.turn ^= 1;
-            nextMove = rules.computerMove(boardCopy);
-            for(n in nextMove) {
-                boardCopyNext = JSON.parse(JSON.stringify(boardCopy));
-                rules.updateBoard(boardCopyNext, nextMove[n]);
-                boardCopy.turn ^= 1;
-                nextPoints = Math.min(this.evaluate(boardCopyNext) * (pointMulti), nextPoints);
-            }
-            if(nextPoints > points) {
-                points = nextPoints;
-                bestMove = nowMove[m];
-            } else if(nextPoints == points && Math.floor(Math.random() * 2)) {
-                bestMove = nowMove[m];
+    miniMaxRoot: function(board, depth) {
+        let bestMove
+        let nextBoard;
+        let points, p;
+        if(board.turn == 0) {
+            points = -200;
+        } else {
+            points = 200
+        }
+        let allMoves = rules.computerMove(board);
+        for(let m in allMoves) {
+            nextBoard = JSON.parse(JSON.stringify(board));
+            rules.updateBoard(nextBoard, allMoves[m]);
+            nextBoard.turn ^= 1;
+            p = this.minimax(nextBoard, depth - 1)
+            if(p <= points && board.turn) {
+                points = p;
+                bestMove = allMoves[m]
+            } else if(p >= points && !board.turn) {
+                points = p;
+                bestMove = allMoves[m];
             }
         }
         return bestMove;
+    },
+
+    minimax: function(board, depth = 0) {
+        if(depth == 0) {
+            return this.evaluate(board)
+        }
+        let nextBoard;
+        let points, p;
+        if(board.turn == 0) {
+            points = -200;
+        } else {
+            points = 200
+        }
+        let allMoves = rules.computerMove(board);
+        for(let m in allMoves) {
+            nextBoard = JSON.parse(JSON.stringify(board));
+            rules.updateBoard(nextBoard, allMoves[m]);
+            nextBoard.turn ^= 1;
+            p = this.minimax(nextBoard, depth - 1)
+            if(p <= points && board.turn) {
+                points = p;
+                bestMove = allMoves[m]
+            } else if(p >= points && !board.turn) {
+                points = p;
+                bestMove = allMoves[m];
+            }
+        }
+        return points;
     }
 }

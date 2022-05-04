@@ -1,3 +1,10 @@
-Data 
+Stupid Idea Box
 
-Square : ID 
+- Be able to resize multiple boards on the page to their own size
+
+- Create a player turn variable
+
+To DO:
+Generate Moves
+Update Board
+Find Checks

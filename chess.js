@@ -194,12 +194,14 @@ function endMove(ev) {
         let keys = Object.keys(compMoves);
         let bestMove =  compMoves[keys[ keys.length * Math.random() << 0]];
         */
-        let bestMove = engine.oneMoveAhead(boardState);
+        let bestMove = engine.miniMaxRoot(boardState, 3);
         if(bestMove == null) {
             return
         }
         rules.updateBoard(boardState, bestMove);
         boardState.turn ^= 1;
+        // Print current evaluation code
+        document.getElementById("recentMove").innerHTML = "Point evaluation " + engine.evaluate(boardState);
         data = document.getElementById(squares.getId(bestMove.start)).childNodes[0].id;
         stopSquare = document.getElementById(squares.getId(bestMove.stop));
         if(stopSquare.childNodes.length>0) {
@@ -272,7 +274,7 @@ let rules = {
             case 9:
                 // Rooks check along a direction until it reaches off the board or another piece
                 direction = [1, -1, 16, -16];
-                for(i in direction) {
+                for(let i in direction) {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
@@ -290,7 +292,7 @@ let rules = {
             case 11:
                 // Bishops check along a direction until it reaches off the board or another piece
                 direction = [15, 17, -15, -17];
-                for(i in direction) {
+                for(let i in direction) {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
@@ -307,7 +309,7 @@ let rules = {
             case 12:
                 // Queens check along a direction until it reaches off the board or another piece
                 direction = [1, -1, 16, -16, 15, 17, -15, -17];
-                for(i in direction) {
+                for(let i in direction) {
                     moveStop = move.start + direction[i];
                     while(!(moveStop&0x88)) {
                         destination = board.board[moveStop];
@@ -324,7 +326,7 @@ let rules = {
             case 13:
                 // Kings check one square in every direction
                 direction = [1, -1, 16, -16, 15, 17, -15, -17];
-                for(i in direction) {
+                for(let i in direction) {
                     moveStop = move.start + direction[i];
                     destination = board.board[moveStop];
                     capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
@@ -337,7 +339,7 @@ let rules = {
             case 10:
                 // Knights check 8 squares
                 direction = [31, 33, 14, 18, -31, -33, -14, -18];
-                for(i in direction) {
+                for(let i in direction) {
                     moveStop = move.start + direction[i];
                     destination = board.board[moveStop];
                     capture = destination != 0 && (move.pieceId&0x8) != (destination&0x8);
@@ -384,7 +386,7 @@ let rules = {
     generateLegalMoves: function(board, move) {
         let boardCopy
         let allMoves = rules.generateMove(board, move);
-        for(moveId in allMoves) {
+        for(let moveId in allMoves) {
             boardCopy = JSON.parse(JSON.stringify(board));
             rules.updateBoard(boardCopy, allMoves[moveId]);
             if(rules.findChecks(boardCopy)) {
